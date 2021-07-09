@@ -1,0 +1,35 @@
+{
+    "debugOnFail": false,
+    "skipJsErrors": true,
+    "disableMultipleWindows": true,
+    "reporter": [
+        {
+            "name": "junit",
+            "output": "res.xml"
+        },
+        {
+            "name": "spec"
+        },
+        {
+            "name": "allure",
+            "output": "allure.txt"
+        },
+        {
+            "name": "teamcity",
+            "output": "teamcity.txt"
+        },
+        {
+            "name": "jenkins",
+            "output": "jenkins.xml"
+        }
+    ],
+    "selectorTimeout": 30000,
+    "assertionTimeout": 30000,
+    "pageLoadTimeout": 30000,
+    "screenshots": {
+        "takeOnFails": true,
+        "fullPage": true,
+        "path": "screenshots",
+        "pathPattern": "${DATE}_${TIME}/test-${TEST_INDEX}/${USERAGENT}/${FILE_INDEX}.png"
+    }
+}
