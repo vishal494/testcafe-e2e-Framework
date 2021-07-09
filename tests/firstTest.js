@@ -1,13 +1,18 @@
-import HomePage from '../objectRepository/homePage';
+import StackOverFlowHomePage from '../objectRepository/stackOverFlowHomePage';
 
-const HomePageElements = new HomePage();
+const stackOverFlowHomePage = new StackOverFlowHomePage();
+const appURL = "https://stackoverflow.com";
 
-fixture`First test page`
-    .page`${process.env.APP_URL}`
+
+fixture`First test page on stack overflow`
+    .page`${appURL}`
     .beforeEach(async t => {
         await t.maximizeWindow();
     });
 
+//This page tests one basic flow on stackoverflow page
 test("My first test", async t => {
-    await t.click(HomePageElements.aboutApp);
+    await stackOverFlowHomePage.isVisible();
+    await t.click(stackOverFlowHomePage.menuItem);
+    await t.takeElementScreenshot();
 });

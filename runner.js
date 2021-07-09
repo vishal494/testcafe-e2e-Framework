@@ -17,6 +17,12 @@ let testNamePattern = '';
 
 process.env.APP_URL = "www.google.com"
 
+//Help
+if (args.h === true) {
+    console.log(help);
+    process.exit(0);
+}
+
 // Browser list is overridden
 if (b !== undefined) {
     const givenBrowserList = b.split(",");
