@@ -1,0 +1,34 @@
+{
+  "name": "mytestcafewebframework",
+  "version": "1.0.0",
+  "description": "This is my web testing framework using Testcafe",
+  "main": "runner.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vishal494/MyTestCafeFramework.git"
+  },
+  "author": "rvishal494",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "lodash": "^4.17.20",
+    "minimist": "^1.2.5",
+    "sync-request": "^6.1.0",
+    "testcafe": "^1.9.2",
+    "testcafe-browser-provider-browserstack": "^1.13.1",
+    "testcafe-reporter-allure": "^1.0.5",
+    "testcafe-reporter-jenkins": "^1.0.1",
+    "testcafe-reporter-junit": "^3.0.2",
+    "testcafe-reporter-teamcity": "^1.0.12"
+  },
+  "bugs": {
+    "url": "https://github.com/vishal494/MyTestCafeFramework/issues"
+  },
+  "homepage": "https://github.com/vishal494/MyTestCafeFramework#readme"
+}

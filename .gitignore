@@ -1,0 +1,17 @@
+.DS_Store
+node_modules
+npm-debug.log
+build
+.idea/
+res.xml
+screenshots/*
+.vscode
+allure-*
+allure.txt
+package-lock.json
+.classpath
+.project
+bin
+cms-data-files
+teamcity.txt
+jenkins.xml
