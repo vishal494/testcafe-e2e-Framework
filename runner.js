@@ -14,8 +14,7 @@ let browsers = 'chrome';
 let concurrency = 1;
 let fixtureNamePattern = '.*page';
 let testNamePattern = '';
-
-process.env.APP_URL = "www.google.com"
+let integrationTests = path.resolve("./tests");
 
 //Help
 if (args.h === true) {
@@ -51,21 +50,17 @@ createTestCafe()
     .then(tc => {
         testcafe = tc;
         const runner = testcafe.createRunner();
-        runner.filter((testName, fixtureName, fixturePattern, testMeta, fixtureMeta) => {
-            const fixtureTestMatched = fixtureName.match(fixtureNamePattern) && testName.match(testNamePattern);
-            console.group(`Matched testcase name ${testName} status ${fixtureTestMatched === null ? false : true}`);
+        runner.filter((testName, fixtureName) => {
+            const testFixtureMatched = fixtureName.match(fixtureNamePattern) && testName.match(testNamePattern);
+            console.group(`Testcase name ${testName} status ${testFixtureMatched === null ? false : true}`);
             console.groupEnd();
-            return fixtureTestMatched;
+            return testFixtureMatched;
         });
 
         return runner
-            .src([path.resolve('tests')])
+            .src([integrationTests])
             .browsers(browsers)
             .concurrency(concurrency)
-            .reporter([{
-                "name": "allure",
-                "output": "allure.txt"
-            }])
             .run();
     })
 
