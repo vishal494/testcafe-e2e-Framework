@@ -11,7 +11,8 @@ Steps to execute locally:
    </br>
    <b>
    <h4>
-     npm run help
+     npm run help --> To list down available options
+     npm run test:report --> To generate reporter
      </h4>
    </br>
   
@@ -21,18 +22,24 @@ Steps to execute locally:
   <pre>
  MyTestCafeWebFramework
 ├── README.md
-├── allure
 ├── allure.txt
+├── doc-allure-config.js
+├── jenkins.xml
 ├── objectRepository
 │   ├── homePage.js
-│   └── stackOverFlowHomePage.js
+│   └── stackOverFlow
+│       ├── loginPage.js
+│       └── stackOverFlowHomePage.js
 ├── package-lock.json
 ├── package.json
+├── res.xml
 ├── runner.js
-├── screenshots
+├── teamcity.txt
 ├── tests
 │   └── firstTest.js
 └── util
+    ├── browserOperation.js
+    └── dataFile.js
   </pre>
 
 You can create a config folder and keep your app URL there and call it in your program, I am using multiple website to test so I am calling in in the respective pages.
