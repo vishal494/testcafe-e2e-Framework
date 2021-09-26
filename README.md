@@ -12,8 +12,9 @@ Steps to execute locally:
    <b>
    <h4>
      npm run help --> To list down available options
+ </br>
      npm run test:report --> To generate reporter
-     </h4>
+   </h4>
    </br>
   
 <h4>
