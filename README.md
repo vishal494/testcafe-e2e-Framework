@@ -21,7 +21,7 @@ Steps to execute locally:
      Folder structure
  </h4>
   <pre>
- MyTestCafeWebFramework
+testcafe-e2e-Framework
 ├── README.md
 ├── allure.txt
 ├── doc-allure-config.js
