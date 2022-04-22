@@ -1,0 +1,144 @@
+/* eslint-disable no-loop-func */
+
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
+const fileName = 'reporterCustom.json';
+
+/**
+ * @summary Obtain the details from reporterCustom.json file
+ * @return {String} Returns the JSON parsed value as output
+ */
+const fileReader = async () =>{
+  let filePath = path.resolve(process.cwd(), fileName);
+  let fileDetails;
+
+  if (fs.existsSync(filePath)) {
+    try {
+      fileDetails = fs.readFileSync(filePath);
+      const parsed = JSON.parse(fileDetails);
+      return parsed;
+    }
+    catch (err) {
+      console.log('reporterCustom.json is not a valid file');
+      return new Error(`Issue reading file ${err}`);
+    }
+  } else {
+    return new Error('reporterCustom.json file does not exist');
+  }
+}
+
+/**
+ * @summary Obtain the test case id's associated to a test plan
+ * @description Returns a list of all the test cases in the test plan
+ * deployed page nation
+ * @return Returns an array of test id from XRAY Test Plan
+ */
+const getTestIDsAssociatedToTestPlan = async (xrayTestPlanID) => {
+  let authenticationResponse;
+  let getTestIdFromTestPlan = [];
+  let result = [];
+  let totalNumberOfTestCases;
+  const fileDetails = await fileReader();
+
+  if (fileDetails.xrayNotification.toUpperCase() === 'ON') {
+    try {
+      authenticationResponse = await axios.post(await fileDetails.xrayAuthenticationEndPoint, {
+        'client_id': await fileDetails.xray_client_id,
+        'client_secret': await fileDetails.xray_client_secret
+      });
+      console.log(`authenticationResponse ${authenticationResponse.data}`);
+    } catch (err) {
+      console.log(`Failed to obtain authentication details ${err}`);
+    }
+    if (authenticationResponse.status === 200) {
+      let start = 0;
+      do {
+        await axios({
+          method: 'get',
+          url: fileDetails.xrayLinkToTestPlanEndPoint,
+          data: {
+            query: `{
+              getTestPlan(issueId: "${xrayTestPlanID}") {
+                  issueId
+                  jira(fields: ["key"])
+                  tests(start:${start} limit: 100) {
+                      total
+                      start
+                      limit
+                      results {
+                          issueId
+                          jira(fields: ["key","summary"])
+                      }
+                  }
+              }
+          }`
+          },
+          headers: {
+            Authorization: `Bearer ${authenticationResponse.data}`,
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
+          }
+        }).then(response => {
+          if (response.status === 200) {
+            totalNumberOfTestCases = response.data.data.getTestPlan.tests.total;
+            let totalObjects = Object.keys(response.data.data.getTestPlan.tests.results).length;
+            for (let count = 0 ; count < totalObjects ; count++) {
+              let id = response.data.data.getTestPlan.tests.results[count].jira.key;
+              getTestIdFromTestPlan.push(id);
+            }
+            result = getTestIdFromTestPlan;
+            start = start + 100;
+          } else {
+            result = new Error(`API failed status -> ${response.status} Response ${response.data}`);
+          }
+        }).catch(err => {
+          return new Error(`Failed to get test cases from test plan ${err}`);
+        });
+      } while (totalNumberOfTestCases > start);
+    }
+    console.log(`\nTotal number of test cases in test plan -> ${totalNumberOfTestCases}`);
+    console.log('\nArray of testcase ID ', result);
+    return result;
+  }
+  return new Error('Method called without turning on the flag');
+}
+
+/**
+ * @summary Obtain the test plan id by passing test plan key
+ * @description Fetches the details from the test plan by passing the
+ * test plan key and in particular we are returning the test plan ID.
+ * @return Returns test plan id and key in an array
+ */
+const getTestPlanIdAndKey = async (xrayTestPlanKey) => {
+  const fileDetails = await fileReader();
+  let readData;
+  let result;
+
+  try {
+    if (fileDetails.xrayNotification.toUpperCase() === 'ON') {
+      readData = await axios.get(`https://brightcove.atlassian.net/rest/api/3/issue/${xrayTestPlanKey}`, {
+        auth: {
+          username: "beaconwebautomation@brightcove.com",
+          password: "1lHgWovfNPRnPMfGY2zsE443"
+        }
+      });
+      const testPlanID = readData.data.id;
+      const testPlanKey = readData.data.key;
+      console.log(`Test Plan ID ${testPlanID} Test Plan Key ${testPlanKey}`);
+      result = [testPlanID, testPlanKey];
+    }
+  } catch (err) {
+    console.log(`Failed to obtain TestIDs associated TestPlan using TestKey  ${err}`);
+    result = new Error('Failed to obtain TestIDs associated TestPlan using TestKey');
+  }
+  return result;
+};
+
+const xrayInteractions = {
+  getTestIDsAssociatedToTestPlan,
+  getTestPlanIdAndKey
+};
+
+module.exports = xrayInteractions;
