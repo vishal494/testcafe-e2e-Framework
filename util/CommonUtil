@@ -1,0 +1,19 @@
+exports.createJsonFile = function(object, fileName) {
+  try {
+    let myJSON = JSON.stringify(object);
+    fs.writeFileSync(`${fileName}.json`, myJSON);
+  }
+  catch(error) {
+    throw new Error(`json file creation failed because: ${error}`);
+  }
+};
+
+exports.getJsonDataFromFile = function(fileName) {
+  try {
+    let rawdata = fs.readFileSync(`${fileName}.json`);
+    return JSON.parse(rawdata)
+  }
+  catch(error) {
+    throw new Error(`json file read failed because: ${error}`);
+  }
+}; 
