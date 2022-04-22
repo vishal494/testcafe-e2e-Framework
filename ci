@@ -1,0 +1,135 @@
+pipeline {
+  agent {
+     kubernetes {
+      inheritFrom 'docker-agent'
+      yaml '''apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: testcafe
+    image: testcafe/testcafe
+    imagePullPolicy: Always
+    command:
+      - cat
+    tty: true'''
+    }
+  }
+    parameters {
+        choice(
+            name: 'CustomerName',
+            choices: [''],
+            description: 'Mandatory: Select a CustomerName, first name is set as default'
+        )
+        choice(
+            name: 'ExecutionEnvironment',
+            choices: ['Docker','BrowserStack'],
+            description: 'Choose execution environment, by default Docker ENV (chromium browser is set)'
+        )
+        choice(
+            name: 'BrowserSelect',
+            choices: ['select',''],
+            description: 'Mandatory: Choose only if execution environemt is Browserstack'
+        )
+        choice(
+        name: 'ConcurrencySelect',
+        choices: ['1','2','3','4','5'],
+        description: 'Default value is : 1'
+        )
+        
+        string(name: 'TestPlanID_TestPlanKey', defaultValue: '', description: 'comment')
+        string(name: 'AppVersion', defaultValue: '', description: 'comment')
+        
+    }
+    environment {
+        GIT_TOKEN     = credentials('')
+        NPM_TOKEN     = credentials('')
+        BROWSERSTACK_USERNAME= ""
+        BROWSERSTACK_ACCESS_KEY= ""
+        BROWSERSTACK_DISPLAY_RESOLUTION= "1280x1024"
+        BROWSERSTACK_USE_AUTOMATE= "1"
+        BROWSERSTACK_CONSOLE= "errors"
+        BROWSERSTACK_PROJECT_NAME= ""
+        BROWSERSTACK_BUILD_ID="#${BUILD_NUMBER} Test ${CustomerName}"
+    }
+    options {
+        timeout(activity: true, time: 20, unit: 'MINUTES')
+    }
+    triggers {
+        cron('H 1 * * *')
+    }
+    stages {
+        stage("Set build info") {
+            when { expression {  params.CustomerName != 'select' && (params.ExecutionEnvironment == 'Docker' || params.BrowserSelect != 'select') } }
+            steps {
+                script {
+                    def browser = params.ExecutionEnvironment == 'Docker' ? 'chromium_docker': "${BrowserSelect}"
+                    if(params.AppVersion != ''){
+                    currentBuild.displayName = "#${BUILD_NUMBER} ${CustomerName}_V${AppVersion}_${browser}"
+                    }
+                    else{
+                    currentBuild.displayName = "#${BUILD_NUMBER} ${CustomerName}_${browser}"
+                    }
+                    def cause = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
+                    def userName = "${cause.userName}" == '[]' ? 'Automatic Sanity' : "${cause.userName}"
+                    echo "userName: ${userName}"
+                    def concurrency = params.ConcurrencySelect 
+                    currentBuild.description = "Triggered by ${userName} on test plan ${TestPlanID_TestPlanKey} with concurrency ${concurrency}"
+                }
+            }
+        }
+        stage('Checkout') {
+            when { expression { params.CustomerName != 'select' && (params.ExecutionEnvironment == 'Docker' || params.BrowserSelect != 'select') } }
+            steps {
+                checkout([
+                    $class           : 'GitSCM',
+                    branches         : [[name: "refs/heads/master"]],
+                    extensions       : [],
+                    userRemoteConfigs: [[credentialsId: '', url: "${env.GIT_URL}"]]
+                ])
+            }
+        }
+        stage('Prepare') {
+            when { expression { params.CustomerName != 'select' && (params.ExecutionEnvironment == 'Docker' || params.BrowserSelect != 'select') } }
+            steps {
+            container('testcafe') {
+                echo 'TestCafe framework execution'
+                sh 'set +x; echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc'
+                sh 'NPM_TOKEN=$NPM_TOKEN npm i'
+            }
+            }
+        }
+        stage('Execute') {
+            when { expression { params.CustomerName != 'select' && (params.ExecutionEnvironment == 'Docker' || params.BrowserSelect != 'select')} }
+            steps {
+                container('testcafe') {
+                echo 'successfully set env variables'
+                script{
+                    //Setting testPlanID_Key to a default value for sanity run.
+                    def testPlanID_Key = params.TestPlanID_TestPlanKey == '' ? 'OTT-14118' : params.TestPlanID_TestPlanKey;
+                    //key to handle input in Xray ID or Xray key
+                    def key = testPlanID_Key.contains('ID') ? '-k' : '-i';
+                    //cause to generate the name of person triggering, if automation it will show Automation Sanity
+                    def cause = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause');
+                    def userName = "${cause.userName}" == '[]' ? 'Automatic Sanity' : "${cause.userName}";
+                    //browser - Docker - chromium or a specified browserstack supporting browser
+                    def browser = params.ExecutionEnvironment == 'Docker' ? 'chromium:headless' : "${BrowserSelect}";
+                    // sh command to differentiate between docker and browserstack
+                    def listBrowsers = params.ExecutionEnvironment == 'Docker' ? 'testcafe -b' : 'testcafe -b browserstack';
+                
+                    sh listBrowsers
+                    if (params.CustomerName == 'UndefinedCustomer' && params.UndefinedCustomerURL != '' && params.UndefinedCustomerAPI != '') {
+                        sh "node runner.js -b '${browser}' ${key} '${testPlanID_Key}' -p 'UndefinedCustomer' -c '${ConcurrencySelect}' -u ${UndefinedCustomerURL} -n ${UndefinedCustomerAPI}"
+                    } else {
+                        sh "node runner.js -b '${browser}' ${key} '${testPlanID_Key}' -p '${CustomerName}' -c '${ConcurrencySelect}' -x '${userName}' -d '${BUILD_NUMBER}'"
+                    }
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            allure includeProperties: false, jdk: '', reportBuildPolicy: 'ALWAYS', results: [[path: 'target/allure-results']]
+        }
+    }
+}
